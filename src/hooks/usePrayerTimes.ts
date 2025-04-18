@@ -8,8 +8,32 @@ export const usePrayerTimes = () => {
   const [prayers, setPrayers] = useState<Prayer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [timezone, setTimezone] = useState<string>('');
+  const [gmtOffset, setGmtOffset] = useState<string>('');
+  const [localTime, setLocalTime] = useState<string>('');
   const { city, latitude, longitude } = useLocation();
   const { showNotification } = useNotification();
+
+  // Fetch timezone info
+  useEffect(() => {
+    const fetchTimezone = async () => {
+      if (!latitude || !longitude) return;
+      try {
+        const response = await fetch(`https://timeapi.io/api/Time/current/coordinate?latitude=${latitude}&longitude=${longitude}`);
+        if (!response.ok) throw new Error('Failed to fetch timezone');
+        const data = await response.json();
+        setTimezone(data.timeZone || '');
+        setLocalTime(data.dateTime || ''); // ISO string, e.g. '2025-04-18T22:18:04'
+        // Optionally, set gmtOffset to the time zone string
+        setGmtOffset(data.timeZone || '');
+      } catch (e) {
+        setTimezone('');
+        setLocalTime('');
+        setGmtOffset('');
+      }
+    };
+    fetchTimezone();
+  }, [latitude, longitude]);
 
   // Fetch prayer times
   useEffect(() => {
@@ -70,5 +94,5 @@ export const usePrayerTimes = () => {
     return () => clearInterval(intervalId);
   }, [prayers, showNotification]);
 
-  return { prayers, loading, error };
+  return { prayers, loading, error, timezone, gmtOffset, localTime };
 };

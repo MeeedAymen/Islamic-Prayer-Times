@@ -10,6 +10,7 @@ const defaultLocationContext: LocationContextType = {
   error: null,
   getUserLocation: () => {},
   permissionStatus: null,
+  setCoordinates: () => {}, // dummy implementation
   setPermissionStatus: () => {},
 };
 
@@ -108,6 +109,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     getUserLocation();
   }, []);
 
+  // Add a setter for coordinates
+  const setCoordinates = (lat: number, lon: number) => {
+    setLatitude(lat);
+    setLongitude(lon);
+  };
+
   return (
     <LocationContext.Provider
       value={{
@@ -120,6 +127,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         getUserLocation,
         permissionStatus,
         setPermissionStatus,
+        setCoordinates,
       }}
     >
       {children}

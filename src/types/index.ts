@@ -57,6 +57,7 @@ export interface LocationContextType {
   getUserLocation: () => void;
   permissionStatus: PermissionState | null;
   setPermissionStatus: (status: PermissionState) => void;
+  setCoordinates: (lat: number, lon: number) => void;
 }
 
 export interface NotificationContextType {
