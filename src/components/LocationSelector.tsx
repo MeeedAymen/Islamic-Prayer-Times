@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Search } from 'lucide-react';
 import { useLocation } from '../context/LocationContext';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
 
 interface City {
   name: string;
@@ -12,7 +11,6 @@ interface City {
   longitude: number;
 }
 
-const CITIES_API_KEY = '579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b';
 
 const LocationSelector: React.FC = () => {
   const { t } = useTranslation();
@@ -48,25 +46,24 @@ const LocationSelector: React.FC = () => {
       setSearchError(null);
       
       try {
-        const response = await axios.get(
-          `https://api.geoapi.qc.ca/v1/suggest/cities?text=${encodeURIComponent(inputCity)}&limit=5`,
-          {
-            headers: {
-              'Authorization': `Bearer ${CITIES_API_KEY}`,
-              'Accept': 'application/json'
-            }
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(inputCity)}&format=json&addressdetails=1&limit=5`;
+        const response = await fetch(url, {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'Islamic-Prayer-Times-App/1.0 (your@email.com)'
           }
-        );
+        });
+        const data = await response.json();
+        console.log('Nominatim city suggestions API response:', data);
 
-        if (response.data && response.data.features) {
-          const cities: City[] = response.data.features.map((feature: any) => ({
-            name: feature.properties.name,
-            country: feature.properties.country,
-            countryCode: feature.properties.countrycode,
-            latitude: feature.geometry.coordinates[1],
-            longitude: feature.geometry.coordinates[0]
+        if (Array.isArray(data) && data.length > 0) {
+          const cities: City[] = data.map((item: any) => ({
+            name: item.display_name.split(',')[0],
+            country: item.address.country || '',
+            countryCode: item.address.country_code ? item.address.country_code.toUpperCase() : '',
+            latitude: parseFloat(item.lat),
+            longitude: parseFloat(item.lon)
           }));
-
           setSuggestions(cities);
           setShowSuggestions(true);
         } else {
@@ -77,10 +74,12 @@ const LocationSelector: React.FC = () => {
         console.error('Error fetching city suggestions:', error);
         setSuggestions([]);
         setSearchError('Failed to fetch city suggestions');
+        alert('Failed to fetch city suggestions. Check the console for details.');
       } finally {
         setIsLoading(false);
       }
     };
+
 
     const debounceTimer = setTimeout(fetchCitySuggestions, 300);
     return () => clearTimeout(debounceTimer);
@@ -90,6 +89,14 @@ const LocationSelector: React.FC = () => {
     e.preventDefault();
     if (suggestions.length > 0) {
       handleSuggestionClick(suggestions[0]);
+    } else if (inputCity.trim().length > 0) {
+      setCity(inputCity.trim());
+      setInputCity('');
+      setSuggestions([]);
+      setShowSuggestions(false);
+      if (inputRef.current) {
+        inputRef.current.blur();
+      }
     }
   };
 

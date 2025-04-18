@@ -63,11 +63,26 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           setLatitude(position.coords.latitude);
           setLongitude(position.coords.longitude);
           setIsLocationLoading(false);
           setError(null);
+          // Reverse geocode to get city name
+          try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&format=json`);
+            if (response.ok) {
+              const data = await response.json();
+              // Try to get city/town/village from the response
+              const address = data.address;
+              const cityName = address.city || address.town || address.village || address.hamlet || address.county || address.state || 'Unknown';
+              setCity(cityName);
+            } else {
+              setCity('Unknown');
+            }
+          } catch (e) {
+            setCity('Unknown');
+          }
         },
         (error) => {
           if (error.code === error.PERMISSION_DENIED) {
