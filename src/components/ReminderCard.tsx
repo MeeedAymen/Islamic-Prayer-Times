@@ -2,22 +2,26 @@ import React from 'react';
 import { BookOpen, RefreshCw } from 'lucide-react';
 import { Adkar } from '../types';
 import { QuranVerse } from '../types';
+import { Hadith } from '../data/hadith';
 
 interface ReminderCardProps {
   title: string;
-  type: 'adkar' | 'quran';
-  content: Adkar | QuranVerse;
+  type: 'adkar' | 'quran' | 'hadith';
+  content: Adkar | QuranVerse | Hadith;
   onRefresh: () => void;
 }
 
 const ReminderCard: React.FC<ReminderCardProps> = ({ title, type, content, onRefresh }) => {
   const isAdkar = type === 'adkar';
+  const isQuran = type === 'quran';
+  const isHadith = type === 'hadith';
   const adkar = isAdkar ? content as Adkar : null;
-  const verse = !isAdkar ? content as QuranVerse : null;
+  const verse = isQuran ? content as QuranVerse : null;
+  const hadith = isHadith ? content as Hadith : null;
   
-  const arabicText = isAdkar ? adkar?.text : verse?.arabicText;
-  const translation = isAdkar ? adkar?.translation : verse?.translation;
-  const reference = isAdkar ? adkar?.reference : verse?.reference;
+  const arabicText = isAdkar ? adkar?.text : isQuran ? verse?.arabicText : hadith?.text;
+  const translation = isAdkar ? adkar?.translation : isQuran ? verse?.translation : hadith?.translation;
+  const reference = isAdkar ? adkar?.reference : isQuran ? verse?.reference : hadith?.reference;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-300">
@@ -38,7 +42,9 @@ const ReminderCard: React.FC<ReminderCardProps> = ({ title, type, content, onRef
       <div className={`mb-4 p-4 rounded-lg ${
         isAdkar 
           ? 'bg-primary-50 dark:bg-primary-900/10' 
-          : 'bg-secondary-50 dark:bg-secondary-900/10'
+          : isQuran
+            ? 'bg-secondary-50 dark:bg-secondary-900/10'
+            : 'bg-yellow-50 dark:bg-yellow-900/10'
       }`}>
         <p className="font-arabic text-xl leading-relaxed text-right mb-3 text-gray-900 dark:text-white">
           {arabicText}

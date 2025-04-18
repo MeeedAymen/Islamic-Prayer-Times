@@ -4,6 +4,7 @@ import { useLocation } from '../context/LocationContext';
 import { useReminders } from '../hooks/useReminders';
 import { getRandomAdkar } from '../data/adkar';
 import { getRandomQuranVerse } from '../data/quranVerses';
+import { getRandomHadith } from '../data/hadith';
 
 import LocationSelector from '../components/LocationSelector';
 import PrayerTimesCard from '../components/PrayerTimesCard';
@@ -16,6 +17,7 @@ const HomePage: React.FC = () => {
   
   const [currentAdkar, setCurrentAdkar] = React.useState(getRandomAdkar());
   const [currentVerse, setCurrentVerse] = React.useState(getRandomQuranVerse());
+  const [currentHadith, setCurrentHadith] = React.useState(getRandomHadith());
 
   const handleRefreshAdkar = () => {
     const newAdkar = getRandomAdkar();
@@ -27,6 +29,11 @@ const HomePage: React.FC = () => {
     const newVerse = getRandomQuranVerse();
     setCurrentVerse(newVerse);
     showRandomQuranVerse();
+  };
+
+  const handleRefreshHadith = () => {
+    const newHadith = getRandomHadith();
+    setCurrentHadith(newHadith);
   };
 
   return (
@@ -48,6 +55,12 @@ const HomePage: React.FC = () => {
             type="adkar" 
             content={currentAdkar} 
             onRefresh={handleRefreshAdkar} 
+          />
+          <ReminderCard 
+            title="Daily Hadith" 
+            type="hadith" 
+            content={currentHadith} 
+            onRefresh={handleRefreshHadith} 
           />
           <ReminderCard 
             title="Quran Verse" 
