@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePrayerTimes } from '../hooks/usePrayerTimes';
+import { useLocation } from '../context/LocationContext';
 import { useReminders } from '../hooks/useReminders';
 import { getRandomAdkar } from '../data/adkar';
 import { getRandomQuranVerse } from '../data/quranVerses';
@@ -9,7 +10,8 @@ import PrayerTimesCard from '../components/PrayerTimesCard';
 import ReminderCard from '../components/ReminderCard';
 
 const HomePage: React.FC = () => {
-  const { prayers, loading, error, localTime, gmtOffset } = usePrayerTimes();
+  const { prayers, loading, error, localTime } = usePrayerTimes();
+  const { city } = useLocation();
   const { showRandomAdkar, showRandomQuranVerse } = useReminders();
   
   const [currentAdkar, setCurrentAdkar] = React.useState(getRandomAdkar());
@@ -30,9 +32,9 @@ const HomePage: React.FC = () => {
   return (
     <div>
       {/* Prominent current time display at the top */}
-      {localTime && gmtOffset && (
+      {localTime && city && (
         <div className="text-center text-3xl font-bold mb-8 text-primary-700 dark:text-primary-300">
-          {localTime.slice(11, 16)} <span className="text-base font-normal">{gmtOffset}</span>
+          {localTime.slice(11, 16)} <span className="text-base font-normal">{city}</span>
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
