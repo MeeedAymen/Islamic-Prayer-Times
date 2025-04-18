@@ -10,7 +10,7 @@ import PrayerTimesCard from '../components/PrayerTimesCard';
 import ReminderCard from '../components/ReminderCard';
 
 const HomePage: React.FC = () => {
-  const { prayers, loading, error, localTime } = usePrayerTimes();
+  const { prayers, loading, error, localTime, gmtOffset } = usePrayerTimes();
   const { city } = useLocation();
   const { showRandomAdkar, showRandomQuranVerse } = useReminders();
   
@@ -34,7 +34,7 @@ const HomePage: React.FC = () => {
       {/* Prominent current time display at the top */}
       {localTime && city && (
         <div className="text-center text-3xl font-bold mb-8 text-primary-700 dark:text-primary-300">
-          {localTime.slice(11, 16)} <span className="text-base font-normal">{city}</span>
+          {localTime.slice(11, 16)} <span className="text-base font-normal">{city} {gmtOffset}</span>
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
