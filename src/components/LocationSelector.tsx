@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Search } from 'lucide-react';
 import { useLocation } from '../context/LocationContext';
 import { useTranslation } from 'react-i18next';
+import MapModal from './MapModal';
 
 interface City {
   name: string;
@@ -21,7 +22,9 @@ const LocationSelector: React.FC = () => {
   const [searchError, setSearchError] = useState<string | null>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { city, setCity, getUserLocation, isLocationLoading, error } = useLocation();
+  const { city, setCity, setCoordinates, getUserLocation, isLocationLoading, error } = useLocation();
+  const [showMap, setShowMap] = useState(false);
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -185,7 +188,7 @@ const LocationSelector: React.FC = () => {
         </button>
       </form>
       
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 mt-4">
         <button
           onClick={getUserLocation}
           disabled={isLocationLoading}
@@ -207,7 +210,33 @@ const LocationSelector: React.FC = () => {
           </svg>
           {isLocationLoading ? t('common.detecting') : t('common.useMyLocation')}
         </button>
+        <button
+          type="button"
+          className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 flex items-center transition-colors"
+          onClick={() => setShowMap(true)}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-primary-600 dark:text-primary-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" /></svg>
+          Choose from Map
+        </button>
       </div>
+      <MapModal
+        isOpen={showMap}
+        onClose={() => setShowMap(false)}
+        onSelect={async (lat, lon) => {
+          // Reverse geocode the lat/lon
+          try {
+            const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+            const response = await fetch(url);
+            const data = await response.json();
+            const cityName = data.address.city || data.address.town || data.address.village || data.display_name || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            setCity(cityName);
+            setCoordinates(lat, lon);
+            setShowMap(false);
+          } catch (e) {
+            alert('Failed to get city name from map.');
+          }
+        }}
+      />
       
       {error && (
         <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
