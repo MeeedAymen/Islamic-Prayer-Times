@@ -34,7 +34,7 @@ const HomePage: React.FC = () => {
       {/* Prominent current time display at the top */}
       {localTime && city && (
         <div className="text-center text-3xl font-bold mb-8 text-primary-700 dark:text-primary-300">
-          {localTime.slice(11, 16)} <span className="text-base font-normal">{city} {gmtOffset}</span>
+          {localTime.slice(11, 16)} <span className="text-base font-normal">{city}</span>
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -106,7 +106,10 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
-    getUserLocation();
+    // Only auto-fetch location if using default (Mecca)
+    if (city === 'Mecca' && latitude === 21.422510 && longitude === 39.826168) {
+      getUserLocation();
+    }
   }, []);
 
   // Add a setter for coordinates

@@ -22,37 +22,28 @@ export const usePrayerTimes = () => {
         const response = await fetch(`https://timeapi.io/api/Time/current/coordinate?latitude=${latitude}&longitude=${longitude}`);
         if (!response.ok) throw new Error('Failed to fetch timezone');
         const data = await response.json();
-        setTimezone(data.timeZone || '');
-        setLocalTime(data.dateTime || ''); // ISO string, e.g. '2025-04-18T22:18:04'
+        if (data.timeZone && data.timeZone !== timezone) {
+          setTimezone(data.timeZone);
+        }
+        if (data.dateTime && data.dateTime !== localTime) {
+          setLocalTime(data.dateTime);
+        }
         // Compute GMT offset from timezone string
         if (data.timeZone && data.dateTime) {
           const dt = new Date(data.dateTime);
           const tz = data.timeZone;
-          const gmtMatch = dt.toLocaleString('en-US', { timeZone: tz, timeZoneName: 'short' })
-            .match(/GMT([+-]\d{1,2})/);
-          let offset = '';
-          if (gmtMatch && gmtMatch[1]) {
-            offset = `GMT${gmtMatch[1]}`;
-          } else {
-            // Reliable calculation: get the offset in minutes between UTC and the target timezone
-            const utcDate = new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate(), dt.getHours(), dt.getMinutes(), dt.getSeconds()));
-            const tzDateParts = new Intl.DateTimeFormat('en-US', {
-              timeZone: tz,
-              hour12: false,
-              year: 'numeric', month: '2-digit', day: '2-digit',
-              hour: '2-digit', minute: '2-digit', second: '2-digit'
-            })
-              .formatToParts(dt)
-              .reduce((acc, part) => { acc[part.type] = part.value; return acc; }, {} as any);
-            // Compose a date string in the target timezone
-            const tzDateString = `${tzDateParts.year}-${tzDateParts.month}-${tzDateParts.day}T${tzDateParts.hour}:${tzDateParts.minute}:${tzDateParts.second}`;
-            const tzDate = new Date(tzDateString + 'Z'); // as UTC
-            // Offset in minutes
+          // Robust GMT offset calculation
+          function getGmtOffset(date: Date, timeZone: string): string {
+            const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+            const tzDate = new Date(date.toLocaleString('en-US', { timeZone }));
             const diff = (tzDate.getTime() - utcDate.getTime()) / 60000;
             const hours = Math.round(diff / 60);
-            offset = `GMT${hours >= 0 ? '+' : ''}${hours}`;
+            return `GMT${hours >= 0 ? '+' : ''}${hours}`;
           }
-          setGmtOffset(offset);
+          const offset = getGmtOffset(dt, tz);
+          if (offset !== gmtOffset) {
+            setGmtOffset(offset);
+          }
         } else {
           setGmtOffset('');
         }
