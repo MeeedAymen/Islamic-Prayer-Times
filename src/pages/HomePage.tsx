@@ -14,6 +14,23 @@ const HomePage: React.FC = () => {
   const { prayers, loading, error, localTime, gmtOffset } = usePrayerTimes();
   const { city } = useLocation();
   const { showRandomAdkar, showRandomQuranVerse } = useReminders();
+
+  // Live updating time state
+  const [liveTime, setLiveTime] = React.useState<string | null>(localTime);
+  React.useEffect(() => {
+    // When localTime changes (location or timezone changes), reset liveTime
+    setLiveTime(localTime);
+  }, [localTime]);
+  React.useEffect(() => {
+    if (!liveTime) return;
+    const interval = setInterval(() => {
+      // Add one minute to the current liveTime
+      const dt = new Date(liveTime);
+      dt.setMinutes(dt.getMinutes() + 1);
+      setLiveTime(dt.toISOString());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [liveTime]);
   
   const [currentAdkar, setCurrentAdkar] = React.useState(getRandomAdkar());
   const [currentVerse, setCurrentVerse] = React.useState(getRandomQuranVerse());
@@ -39,9 +56,9 @@ const HomePage: React.FC = () => {
   return (
     <div>
       {/* Prominent current time display at the top */}
-      {localTime && gmtOffset && (
+      {liveTime && gmtOffset && (
         <div className="text-center text-3xl font-bold mb-8 text-primary-700 dark:text-primary-300">
-          {localTime.slice(11, 16)} <span className="text-base font-normal">{gmtOffset}</span>
+          {liveTime.slice(11, 16)} <span className="text-base font-normal">{gmtOffset}</span>
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
