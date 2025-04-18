@@ -1,0 +1,30 @@
+{
+  "common": {
+    "language": "اللغة",
+    "darkMode": "الوضع الليلي",
+    "location": "موقعك",
+    "currentLocation": "الموقع الحالي",
+    "enterCity": "أدخل اسم المدينة",
+    "update": "تحديث",
+    "useMyLocation": "استخدم موقعي الحالي",
+    "detecting": "جاري الكشف...",
+    "noResults": "لم يتم العثور على مدن",
+    "error": {
+      "fetchFailed": "فشل في جلب اقتراحات المدن"
+    }
+  },
+  "prayers": {
+    "title": "مواقيت الصلاة",
+    "fajr": "الفجر",
+    "sunrise": "الشروق",
+    "dhuhr": "الظهر",
+    "asr": "العصر",
+    "maghrib": "المغرب",
+    "isha": "العشاء"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "clearAll": "مسح جميع الإشعارات",
+    "noNotifications": "لا توجد إشعارات"
+  }
+}

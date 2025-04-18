@@ -50,11 +50,13 @@ export interface NotificationItem {
 export interface LocationContextType {
   city: string;
   setCity: (city: string) => void;
-  latitude: number | null;
-  longitude: number | null;
+  latitude: number;
+  longitude: number;
   isLocationLoading: boolean;
   error: string | null;
   getUserLocation: () => void;
+  permissionStatus: PermissionState | null;
+  setPermissionStatus: (status: PermissionState) => void;
 }
 
 export interface NotificationContextType {

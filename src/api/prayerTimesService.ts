@@ -4,13 +4,33 @@ import { PrayerTimes, Prayer } from '../types';
 // Base URL for the prayer times API
 const API_URL = 'https://api.aladhan.com/v1';
 
+interface AladhanAPIResponse {
+  code: number;
+  status: string;
+  data: {
+    timings: {
+      Fajr: string;
+      Sunrise: string;
+      Dhuhr: string;
+      Asr: string;
+      Maghrib: string;
+      Isha: string;
+      [key: string]: string;
+    };
+    date: {
+      readable: string;
+      timestamp: string;
+    };
+  };
+}
+
 // Fetch prayer times by coordinates
 export const fetchPrayerTimesByCoordinates = async (
   latitude: number,
   longitude: number
 ): Promise<Prayer[]> => {
   try {
-    const response = await axios.get(`${API_URL}/timings`, {
+    const response = await axios.get<AladhanAPIResponse>(`${API_URL}/timings`, {
       params: {
         latitude,
         longitude,
@@ -18,14 +38,18 @@ export const fetchPrayerTimesByCoordinates = async (
       },
     });
 
+    if (response.data.code !== 200) {
+      throw new Error(`API Error: ${response.data.status}`);
+    }
+
     const data = response.data.data.timings;
     const prayerTimes: Prayer[] = [
-      { name: 'Fajr', time: data.Fajr, arabicName: 'الفجر' },
-      { name: 'Sunrise', time: data.Sunrise, arabicName: 'الشروق' },
-      { name: 'Dhuhr', time: data.Dhuhr, arabicName: 'الظهر' },
-      { name: 'Asr', time: data.Asr, arabicName: 'العصر' },
-      { name: 'Maghrib', time: data.Maghrib, arabicName: 'المغرب' },
-      { name: 'Isha', time: data.Isha, arabicName: 'العشاء' },
+      { name: 'Fajr', time: data.Fajr.split(' ')[0], arabicName: 'الفجر' },
+      { name: 'Sunrise', time: data.Sunrise.split(' ')[0], arabicName: 'الشروق' },
+      { name: 'Dhuhr', time: data.Dhuhr.split(' ')[0], arabicName: 'الظهر' },
+      { name: 'Asr', time: data.Asr.split(' ')[0], arabicName: 'العصر' },
+      { name: 'Maghrib', time: data.Maghrib.split(' ')[0], arabicName: 'المغرب' },
+      { name: 'Isha', time: data.Isha.split(' ')[0], arabicName: 'العشاء' },
     ];
 
     return prayerTimes;
@@ -38,7 +62,7 @@ export const fetchPrayerTimesByCoordinates = async (
 // Fetch prayer times by city name
 export const fetchPrayerTimesByCity = async (city: string): Promise<Prayer[]> => {
   try {
-    const response = await axios.get(`${API_URL}/timingsByCity`, {
+    const response = await axios.get<AladhanAPIResponse>(`${API_URL}/timingsByCity`, {
       params: {
         city,
         country: '', // The API will try to infer the country
@@ -46,14 +70,18 @@ export const fetchPrayerTimesByCity = async (city: string): Promise<Prayer[]> =>
       },
     });
 
+    if (response.data.code !== 200) {
+      throw new Error(`API Error: ${response.data.status}`);
+    }
+
     const data = response.data.data.timings;
     const prayerTimes: Prayer[] = [
-      { name: 'Fajr', time: data.Fajr, arabicName: 'الفجر' },
-      { name: 'Sunrise', time: data.Sunrise, arabicName: 'الشروق' },
-      { name: 'Dhuhr', time: data.Dhuhr, arabicName: 'الظهر' },
-      { name: 'Asr', time: data.Asr, arabicName: 'العصر' },
-      { name: 'Maghrib', time: data.Maghrib, arabicName: 'المغرب' },
-      { name: 'Isha', time: data.Isha, arabicName: 'العشاء' },
+      { name: 'Fajr', time: data.Fajr.split(' ')[0], arabicName: 'الفجر' },
+      { name: 'Sunrise', time: data.Sunrise.split(' ')[0], arabicName: 'الشروق' },
+      { name: 'Dhuhr', time: data.Dhuhr.split(' ')[0], arabicName: 'الظهر' },
+      { name: 'Asr', time: data.Asr.split(' ')[0], arabicName: 'العصر' },
+      { name: 'Maghrib', time: data.Maghrib.split(' ')[0], arabicName: 'المغرب' },
+      { name: 'Isha', time: data.Isha.split(' ')[0], arabicName: 'العشاء' },
     ];
 
     return prayerTimes;
@@ -69,7 +97,24 @@ export const fetchWeeklyPrayerTimes = async (
   longitude: number
 ): Promise<PrayerTimes[]> => {
   try {
-    const response = await axios.get(`${API_URL}/calendar`, {
+    const response = await axios.get<{
+      code: number;
+      status: string;
+      data: Array<{
+        timings: {
+          Fajr: string;
+          Sunrise: string;
+          Dhuhr: string;
+          Asr: string;
+          Maghrib: string;
+          Isha: string;
+        };
+        date: {
+          readable: string;
+          timestamp: string;
+        };
+      }>;
+    }>(`${API_URL}/calendar`, {
       params: {
         latitude,
         longitude,
@@ -79,12 +124,16 @@ export const fetchWeeklyPrayerTimes = async (
       },
     });
 
+    if (response.data.code !== 200) {
+      throw new Error(`API Error: ${response.data.status}`);
+    }
+
     const startDay = new Date().getDate() - 1;
     const endDay = startDay + 7;
 
     return response.data.data
       .slice(startDay, endDay)
-      .map((day: any) => ({
+      .map((day) => ({
         fajr: day.timings.Fajr.split(' ')[0],
         sunrise: day.timings.Sunrise.split(' ')[0],
         dhuhr: day.timings.Dhuhr.split(' ')[0],

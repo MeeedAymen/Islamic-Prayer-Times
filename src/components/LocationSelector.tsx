@@ -1,16 +1,111 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Search } from 'lucide-react';
 import { useLocation } from '../context/LocationContext';
+import { useTranslation } from 'react-i18next';
+import axios from 'axios';
+
+interface City {
+  name: string;
+  country: string;
+  countryCode: string;
+  latitude: number;
+  longitude: number;
+}
+
+const CITIES_API_KEY = '579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b';
 
 const LocationSelector: React.FC = () => {
+  const { t } = useTranslation();
   const [inputCity, setInputCity] = useState<string>('');
+  const [suggestions, setSuggestions] = useState<City[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { city, setCity, getUserLocation, isLocationLoading, error } = useLocation();
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const fetchCitySuggestions = async () => {
+      if (inputCity.trim().length < 2) {
+        setSuggestions([]);
+        setSearchError(null);
+        return;
+      }
+
+      setIsLoading(true);
+      setSearchError(null);
+      
+      try {
+        const response = await axios.get(
+          `https://api.geoapi.qc.ca/v1/suggest/cities?text=${encodeURIComponent(inputCity)}&limit=5`,
+          {
+            headers: {
+              'Authorization': `Bearer ${CITIES_API_KEY}`,
+              'Accept': 'application/json'
+            }
+          }
+        );
+
+        if (response.data && response.data.features) {
+          const cities: City[] = response.data.features.map((feature: any) => ({
+            name: feature.properties.name,
+            country: feature.properties.country,
+            countryCode: feature.properties.countrycode,
+            latitude: feature.geometry.coordinates[1],
+            longitude: feature.geometry.coordinates[0]
+          }));
+
+          setSuggestions(cities);
+          setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+          setSearchError('No cities found');
+        }
+      } catch (error) {
+        console.error('Error fetching city suggestions:', error);
+        setSuggestions([]);
+        setSearchError('Failed to fetch city suggestions');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchCitySuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [inputCity]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputCity.trim()) {
-      setCity(inputCity.trim());
-      setInputCity('');
+    if (suggestions.length > 0) {
+      handleSuggestionClick(suggestions[0]);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: City) => {
+    setCity(`${suggestion.name}, ${suggestion.country}`);
+    setInputCity('');
+    setSuggestions([]);
+    setShowSuggestions(false);
+    if (inputRef.current) {
+      inputRef.current.blur();
+    }
+  };
+
+  const handleInputFocus = () => {
+    if (inputCity.trim().length >= 2) {
+      setShowSuggestions(true);
     }
   };
 
@@ -18,11 +113,11 @@ const LocationSelector: React.FC = () => {
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6 transition-colors duration-300">
       <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center">
         <MapPin size={18} className="mr-2 text-primary-600 dark:text-primary-400" />
-        Your Location
+        {t('common.location')}
       </h2>
       
       <div className="mb-4">
-        <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">Current location:</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">{t('common.currentLocation')}:</p>
         <div className="flex items-center">
           <span className="font-medium text-gray-800 dark:text-white">{city}</span>
         </div>
@@ -31,19 +126,55 @@ const LocationSelector: React.FC = () => {
       <form onSubmit={handleSubmit} className="flex items-center mb-3">
         <div className="relative flex-1">
           <input
+            ref={inputRef}
             type="text"
             value={inputCity}
             onChange={(e) => setInputCity(e.target.value)}
-            placeholder="Enter city name"
+            onFocus={handleInputFocus}
+            placeholder={t('common.enterCity')}
+            autoComplete="off"
             className="w-full px-4 py-2 rounded-l-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white text-sm"
           />
-          <Search size={18} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          {isLoading ? (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+            </div>
+          ) : (
+            <Search size={18} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          )}
+          {showSuggestions && (suggestions.length > 0 || searchError) && (
+            <div
+              ref={suggestionsRef}
+              className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden"
+            >
+              {searchError ? (
+                <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                  {t(searchError === 'No cities found' ? 'common.noResults' : 'common.error.fetchFailed')}
+                </div>
+              ) : (
+                suggestions.map((suggestion, index) => (
+                  <button
+                    key={`${suggestion.name}-${index}`}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                  >
+                    <div className="text-sm font-medium text-gray-800 dark:text-white">
+                      {suggestion.name}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {suggestion.country}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
         <button
           type="submit"
           className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-r-lg transition-colors duration-200 text-sm font-medium"
         >
-          Update
+          {t('common.update')}
         </button>
       </form>
       
@@ -67,7 +198,7 @@ const LocationSelector: React.FC = () => {
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          {isLocationLoading ? "Detecting..." : "Use my current location"}
+          {isLocationLoading ? t('common.detecting') : t('common.useMyLocation')}
         </button>
       </div>
       

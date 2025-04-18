@@ -1,0 +1,30 @@
+{
+  "common": {
+    "language": "Language",
+    "darkMode": "Dark Mode",
+    "location": "Your Location",
+    "currentLocation": "Current location",
+    "enterCity": "Enter city name",
+    "update": "Update",
+    "useMyLocation": "Use my current location",
+    "detecting": "Detecting...",
+    "noResults": "No cities found",
+    "error": {
+      "fetchFailed": "Failed to fetch city suggestions"
+    }
+  },
+  "prayers": {
+    "title": "Prayer Times",
+    "fajr": "Fajr",
+    "sunrise": "Sunrise",
+    "dhuhr": "Dhuhr",
+    "asr": "Asr",
+    "maghrib": "Maghrib",
+    "isha": "Isha"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "clearAll": "Clear all notifications",
+    "noNotifications": "No notifications"
+  }
+}
