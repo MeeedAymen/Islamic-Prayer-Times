@@ -51,6 +51,12 @@ const HomePage: React.FC = () => {
         </div>
         <div className="md:col-span-2">
           <ReminderCard 
+            title="Quran Verse" 
+            type="quran" 
+            content={currentVerse} 
+            onRefresh={handleRefreshVerse} 
+          />
+          <ReminderCard 
             title="Daily Adkar" 
             type="adkar" 
             content={currentAdkar} 
@@ -61,12 +67,6 @@ const HomePage: React.FC = () => {
             type="hadith" 
             content={currentHadith} 
             onRefresh={handleRefreshHadith} 
-          />
-          <ReminderCard 
-            title="Quran Verse" 
-            type="quran" 
-            content={currentVerse} 
-            onRefresh={handleRefreshVerse} 
           />
         </div>
       </div>
