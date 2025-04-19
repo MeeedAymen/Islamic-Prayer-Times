@@ -14,46 +14,49 @@ export const usePrayerTimes = () => {
   const { city, latitude, longitude } = useLocation();
   const { showNotification } = useNotification();
 
-  // Fetch timezone info
+  // Fetch timezone info and set up live local time
   useEffect(() => {
-    const fetchTimezone = async () => {
+    let intervalId: NodeJS.Timeout;
+    const fetchTimezoneAndStartClock = async () => {
       if (!latitude || !longitude) return;
       try {
-        const response = await fetch(`https://timeapi.io/api/Time/current/coordinate?latitude=${latitude}&longitude=${longitude}`);
-        if (!response.ok) throw new Error('Failed to fetch timezone');
-        const data = await response.json();
-        if (data.timeZone && data.timeZone !== timezone) {
-          setTimezone(data.timeZone);
-        }
-        if (data.dateTime && data.dateTime !== localTime) {
-          setLocalTime(data.dateTime);
-        }
-        // Compute GMT offset from timezone string
-        if (data.timeZone && data.dateTime) {
-          const dt = new Date(data.dateTime);
-          const tz = data.timeZone;
-          // Robust GMT offset calculation
-          function getGmtOffset(date: Date, timeZone: string): string {
-            const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-            const tzDate = new Date(date.toLocaleString('en-US', { timeZone }));
-            const diff = (tzDate.getTime() - utcDate.getTime()) / 60000;
-            const hours = Math.round(diff / 60);
-            return `GMT${hours >= 0 ? '+' : ''}${hours}`;
-          }
-          const offset = getGmtOffset(dt, tz);
-          if (offset !== gmtOffset) {
-            setGmtOffset(offset);
-          }
+        // 1. Get timezone name from WorldTimeAPI by coordinates
+        // We'll use the /api/timezone/Etc/GMT fallback if not found
+        let timezoneName = '';
+        // Use the geonames.org API to get the timezone name by coordinates (public, no key needed for low usage)
+        const geoRes = await fetch(`https://secure.geonames.org/timezoneJSON?lat=${latitude}&lng=${longitude}&username=demo`);
+        const geoData = await geoRes.json();
+        timezoneName = geoData.timezoneId || 'Etc/GMT';
+        setTimezone(timezoneName);
+        // 2. Fetch initial time for the timezone
+        const timeRes = await fetch(`https://worldtimeapi.org/api/timezone/${timezoneName}`);
+        const timeData = await timeRes.json();
+        setLocalTime(timeData.datetime);
+        // 3. Compute GMT offset
+        if (typeof timeData.utc_offset === 'string') {
+          setGmtOffset('GMT' + timeData.utc_offset);
         } else {
           setGmtOffset('');
         }
+        // 4. Start live clock
+        intervalId = setInterval(() => {
+          setLocalTime(prev => {
+            // Add 1 second to the previous time
+            const dt = new Date(prev);
+            dt.setSeconds(dt.getSeconds() + 1);
+            return dt.toISOString();
+          });
+        }, 1000);
       } catch (e) {
         setTimezone('');
         setLocalTime('');
         setGmtOffset('');
       }
     };
-    fetchTimezone();
+    fetchTimezoneAndStartClock();
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [latitude, longitude]);
 
   // Fetch prayer times
