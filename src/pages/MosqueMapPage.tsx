@@ -149,7 +149,7 @@ const MosqueMapPage: React.FC = () => {
         <div className="w-full relative" style={{ height: 'calc(100vh - 4rem)' }}>
           {/* Vehicle selector overlay */}
           <div className="absolute top-0 left-0 right-0 z-[1000] flex justify-start md:justify-center px-0 pt-0">
-  <div className="bg-white/70 dark:bg-gray-800/70 shadow w-full md:w-auto md:rounded gap-2 items-center overflow-x-auto whitespace-nowrap px-2 py-2 flex md:inline-flex">
+  <div className="bg-white/70 dark:bg-gray-800/70 shadow w-full md:w-auto md:rounded-b-lg gap-2 items-center overflow-x-auto whitespace-nowrap px-2 py-2 flex md:inline-flex">
 
             {VEHICLES.map(v => (
               <button
