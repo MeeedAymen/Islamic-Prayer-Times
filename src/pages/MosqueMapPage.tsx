@@ -4,7 +4,6 @@ import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Car, Bike, Footprints, Locate, BusFront, TrainFront, TramFront, Truck } from 'lucide-react';
 import ZoomControls from '../components/ZoomControls';
-import Header from '../components/Header';
 
 const ORS_API_KEY = import.meta.env.VITE_ORS_API_KEY;
 
@@ -55,9 +54,12 @@ function RecenterButton({ position }: { position: LatLngExpression }) {
 }
 
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const MosqueMapPage: React.FC = () => {
   return <MosqueMapContent />;
 };
+
+export default MosqueMapPage;
 
 // Extract the current content of MosqueMapPage into MosqueMapContent to avoid double logic
 const MosqueMapContent: React.FC = () => {
