@@ -50,14 +50,16 @@ const routeColors: Record<string, string> = {
 function RecenterButton({ position }: { position: LatLngExpression }) {
   const map = useMap();
   return (
-    <button
-      aria-label="Recenter map"
-      className="absolute z-20 bottom-24 right-4 bg-white dark:bg-gray-800 rounded-full shadow-lg p-2 border border-gray-200 dark:border-gray-700 hover:bg-primary-100 dark:hover:bg-primary-900 transition-colors"
-      onClick={() => map.setView(position, 14)}
-      style={{ outline: 'none' }}
-    >
-      <Locate className="text-primary-600 dark:text-primary-400" size={22} />
-    </button>
+    <div className="absolute right-4 bottom-24 z-[1100]">
+      <button
+        aria-label="Recenter map"
+        className="w-10 h-10 flex items-center justify-center rounded-full shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-primary-100 dark:hover:bg-primary-900 text-primary-600 dark:text-primary-400 transition-colors"
+        onClick={() => map.setView(position, 14)}
+        style={{ outline: 'none' }}
+      >
+        <Locate size={22} />
+      </button>
+    </div>
   );
 }
 
