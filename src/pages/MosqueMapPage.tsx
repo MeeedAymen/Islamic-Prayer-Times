@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Car, Bike, Footprints, Locate, BusFront, TrainFront, Scooter, Taxi } from 'lucide-react';
+import { Car, Bike, Footprints, Locate, BusFront, TrainFront, TramFront, Truck } from 'lucide-react';
+import ZoomControls from '../components/ZoomControls';
 
 const ORS_API_KEY = import.meta.env.VITE_ORS_API_KEY;
 
@@ -12,8 +13,8 @@ const VEHICLES = [
   { key: 'foot-walking', label: 'Walking', icon: <Footprints className="inline mr-1" size={18} /> },
   { key: 'driving-hgv', label: 'Bus', icon: <BusFront className="inline mr-1" size={18} /> },
   { key: 'public-transport', label: 'Train', icon: <TrainFront className="inline mr-1" size={18} /> },
-  { key: 'scooter', label: 'Scooter', icon: <Scooter className="inline mr-1" size={18} /> },
-  { key: 'taxi', label: 'Taxi', icon: <Taxi className="inline mr-1" size={18} /> },
+  { key: 'tram', label: 'Tram', icon: <TramFront className="inline mr-1" size={18} /> },
+  { key: 'truck', label: 'Truck', icon: <Truck className="inline mr-1" size={18} /> },
 ];
 
 const mosqueIcon = new L.Icon({
@@ -147,7 +148,7 @@ const MosqueMapPage: React.FC = () => {
       {userPos && (
         <div className="w-full relative" style={{ height: 'calc(100vh - 4rem)' }}>
           {/* Vehicle selector overlay */}
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-[1000] bg-white dark:bg-gray-900 rounded-b-lg shadow px-4 py-2 flex gap-2 items-center">
+          <div className="absolute top-0 left-0 right-0 md:left-1/2 md:-translate-x-1/2 z-[1000] bg-white/70 dark:bg-gray-800/70 rounded-b-lg shadow px-2 py-2 flex gap-2 items-center overflow-x-auto whitespace-nowrap w-full">
             {VEHICLES.map(v => (
               <button
                 key={v.key}
@@ -166,8 +167,9 @@ const MosqueMapPage: React.FC = () => {
               </button>
             ))}
           </div>
-          <MapContainer center={userPos} zoom={14} style={{ height: '100%', width: '100%' }}>
+          <MapContainer center={userPos} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <ZoomControls />
             <Marker position={userPos} icon={userIcon}>
               <Popup>Your Location</Popup>
             </Marker>
