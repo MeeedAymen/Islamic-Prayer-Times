@@ -4,6 +4,7 @@ import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Car, Bike, Footprints, Locate, BusFront, TrainFront, TramFront, Truck } from 'lucide-react';
 import ZoomControls from '../components/ZoomControls';
+import { haversineDistance } from '../utils/distance';
 
 const ORS_API_KEY = import.meta.env.VITE_ORS_API_KEY;
 
@@ -28,6 +29,13 @@ const userIcon = new L.Icon({
   iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-blue.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
+});
+
+const userArrowIcon = (angle: number) => new L.DivIcon({
+  className: '',
+  html: `<img src="/send-arrow.png" style="width:36px;height:36px;transform:rotate(${angle}deg);transition:transform 0.2s;" />`,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
 });
 
 const routeColors: Record<string, string> = {
@@ -123,15 +131,19 @@ const MosqueMapContent: React.FC = () => {
       selectedMosque.lon || selectedMosque.center?.lon,
     ];
     // Only supported vehicle types for ORS
-    const supported = ['driving-car', 'cycling-regular', 'foot-walking', 'driving-hgv', 'public-transport'];
-    if (!supported.includes(vehicle)) {
-      setTimeout(() => {
-        setRouteError('This transport mode is not supported yet.');
-        setLoadingRoute(false);
-      }, 400);
-      return;
-    }
-    const url = `https://api.openrouteservice.org/v2/directions/${vehicle}?api_key=${ORS_API_KEY}&start=${start[1]},${start[0]}&end=${end[1]},${end[0]}`;
+    let apiVehicle = vehicle;
+if (vehicle === 'truck') {
+  apiVehicle = 'driving-car';
+}
+const supported = ['driving-car', 'cycling-regular', 'foot-walking', 'driving-hgv', 'public-transport'];
+if (!supported.includes(apiVehicle)) {
+  setTimeout(() => {
+    setRouteError('This transport mode is not supported yet.');
+    setLoadingRoute(false);
+  }, 400);
+  return;
+}
+const url = `https://api.openrouteservice.org/v2/directions/${apiVehicle}?api_key=${ORS_API_KEY}&start=${start[1]},${start[0]}&end=${end[1]},${end[0]}`;
     fetch(url)
       .then(res => res.json())
       .then(data => {
@@ -182,9 +194,52 @@ const MosqueMapContent: React.FC = () => {
           <MapContainer center={userPos} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <ZoomControls />
-            <Marker position={userPos} icon={userIcon}>
-              <Popup>Your Location</Popup>
-            </Marker>
+            {/* Show arrow icon and rotation if on route, else normal icon */}
+{(() => {
+  try {
+    if (
+      route &&
+      route.geometry &&
+      Array.isArray(route.geometry.coordinates) &&
+      route.geometry.coordinates.length > 1 &&
+      userPos &&
+      typeof userPos[0] === 'number' &&
+      typeof userPos[1] === 'number'
+    ) {
+      // ORS: [lng, lat], Leaflet: [lat, lng]
+      const [userLat, userLng] = userPos;
+      const [nextLng, nextLat] = route.geometry.coordinates[1];
+      if (
+        typeof nextLat === 'number' &&
+        typeof nextLng === 'number'
+      ) {
+        const dx = nextLng - userLng;
+        const dy = nextLat - userLat;
+        const angleRad = Math.atan2(dx, dy);
+        const angleDeg = angleRad * (180 / Math.PI);
+        console.log('Drawing user arrow icon with angle:', angleDeg, 'userPos:', userPos, 'next:', [nextLat, nextLng]);
+        return (
+          <Marker
+            position={userPos}
+            icon={userArrowIcon(angleDeg)}
+          >
+            <Popup>Your Location (On Route)</Popup>
+          </Marker>
+        );
+      } else {
+        console.warn('Route geometry for arrow icon is invalid:', route.geometry.coordinates[1]);
+      }
+    }
+  } catch (e) {
+    console.error('Error rendering user arrow icon:', e);
+  }
+  // Fallback to normal icon
+  return (
+    <Marker position={userPos} icon={userIcon}>
+      <Popup>Your Location</Popup>
+    </Marker>
+  );
+})()}
             {!loadingMosques && mosques.length === 0 && (
               <></> /* Map will look empty, but we show a message below */
             )}
@@ -193,22 +248,57 @@ const MosqueMapContent: React.FC = () => {
                 key={m.id || i}
                 position={[m.lat || m.center?.lat, m.lon || m.center?.lon]}
                 icon={mosqueIcon}
-                eventHandlers={{ click: () => setSelectedMosque(m) }}
+                
               >
                 <Popup>
-                  <div className="font-semibold text-primary-700 dark:text-primary-400 flex items-center">
-                    🕌 {m.tags?.name || 'Unnamed Mosque'}
-                  </div>
-                  <div className="text-xs text-gray-700 dark:text-gray-200 mb-1">
-                    {m.tags?.addr_full || m.tags?.['addr:street'] || m.tags?.['addr:city'] || ''}
-                  </div>
-                  <button
-                    className="mt-2 px-3 py-1 rounded bg-primary-600 text-white hover:bg-primary-700 focus:outline-none"
-                    onClick={() => setSelectedMosque(m)}
-                  >
-                    Go Here
-                  </button>
-                </Popup>
+  <div className="font-semibold text-primary-700 dark:text-primary-400 flex items-center">
+    🕌 {m.tags?.name || m.tags?.['name:en'] || m.tags?.['name:ar'] || m.tags?.['name:fr'] || 'Unnamed Mosque'}
+  </div>
+  {(m.tags?.['addr:street'] || m.tags?.['addr:city']) && (
+    <div className="text-xs text-gray-700 dark:text-gray-200 mb-1">
+      {m.tags?.['addr:street']}{m.tags?.['addr:street'] && m.tags?.['addr:city'] ? ', ' : ''}{m.tags?.['addr:city']}
+    </div>
+  )}
+  {/* Show distance if userPos is available */}
+  {userPos && (
+    <div className="text-xs text-primary-600 dark:text-primary-400 mb-1 font-medium">
+      Distance: {(() => {
+        const lat1 = userPos[0];
+        const lon1 = userPos[1];
+        const lat2 = m.lat || m.center?.lat;
+        const lon2 = m.lon || m.center?.lon;
+        if (
+          typeof lat1 === 'number' && typeof lon1 === 'number' &&
+          typeof lat2 === 'number' && typeof lon2 === 'number'
+        ) {
+          const dist = haversineDistance(lat1, lon1, lat2, lon2);
+          return dist > 1000 ? `${(dist / 1000).toFixed(2)} km` : `${dist.toFixed(0)} m`;
+        }
+        return '?';
+      })()}
+      {/* Show estimated time if this mosque is selected and route is available */}
+      {selectedMosque && ((m.lat || m.center?.lat) === (selectedMosque.lat || selectedMosque.center?.lat)) && ((m.lon || m.center?.lon) === (selectedMosque.lon || selectedMosque.center?.lon)) && (
+        route && route.properties && route.properties.segments && route.properties.segments[0] ? (
+          <span className="block text-xs text-primary-700 dark:text-primary-300 font-normal mt-1">
+            Estimated time: {Math.ceil(route.properties.segments[0].duration / 60)} min
+          </span>
+        ) : (
+          <span className="block text-xs text-gray-500 dark:text-gray-400 font-normal mt-1">
+            Estimated time not available for this vehicle.
+          </span>
+        )
+      )}
+    </div>
+  )}
+  <button
+    className="mt-2 px-3 py-1 rounded bg-primary-600 text-white hover:bg-primary-700 focus:outline-none"
+    onClick={() => {
+  setSelectedMosque(m);
+}}
+  >
+    Go Here
+  </button>
+</Popup>
               </Marker>
             ))}
             {route && (
