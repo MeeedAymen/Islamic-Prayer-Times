@@ -18,6 +18,7 @@ import AdkarPage from './pages/AdkarPage';
 import AdkarCategoryPage from './pages/AdkarCategoryPage';
 import HadithPage from './pages/HadithPage';
 import HadithCollectionPage from './pages/HadithCollectionPage';
+import MosqueMapPage from './pages/MosqueMapPage';
 
 const App: React.FC = () => {
   return (
@@ -33,6 +34,7 @@ const App: React.FC = () => {
                     <Routes>
                       <Route path="/" element={<HomePage />} />
                       <Route path="/quran" element={<QuranPage />} />
+                      <Route path="/mosque-map" element={<MosqueMapPage />} />
                       <Route path="/quran/surah/:id" element={<SurahPage />} />
                       <Route path="/adkar" element={<AdkarPage />} />
                       <Route path="/adkar/:category" element={<AdkarCategoryPage />} />

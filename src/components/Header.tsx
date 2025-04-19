@@ -16,6 +16,7 @@ const Header: React.FC = () => {
 
   const navItems = [
     { path: '/', label: 'Home', icon: Heart },
+    { path: '/mosque-map', label: 'Mosque Map', icon: MapPin },
     { path: '/quran', label: 'Quran', icon: Book },
     { path: '/adkar', label: 'Adkar', icon: BookOpen },
     { path: '/hadith', label: 'Hadith', icon: BookOpen },

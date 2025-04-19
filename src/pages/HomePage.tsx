@@ -1,6 +1,5 @@
 import React from 'react';
 import { usePrayerTimes } from '../hooks/usePrayerTimes';
-import { useLocation } from '../context/LocationContext';
 import { useReminders } from '../hooks/useReminders';
 import { getRandomAdkar } from '../data/adkar';
 import { getRandomQuranVerse } from '../data/quranVerses';
@@ -12,7 +11,6 @@ import ReminderCard from '../components/ReminderCard';
 
 const HomePage: React.FC = () => {
   const { prayers, loading, error, localTime, gmtOffset } = usePrayerTimes();
-  const { city } = useLocation();
   const { showRandomAdkar, showRandomQuranVerse } = useReminders();
 
   // Live updating time state
