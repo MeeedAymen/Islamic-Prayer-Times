@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Car, Bike, Footprints, Locate, BusFront, TrainFront } from 'lucide-react';
+import { Car, Bike, Footprints, Locate, BusFront, TrainFront, Scooter, Taxi } from 'lucide-react';
 
 const ORS_API_KEY = import.meta.env.VITE_ORS_API_KEY;
 
@@ -12,8 +12,8 @@ const VEHICLES = [
   { key: 'foot-walking', label: 'Walking', icon: <Footprints className="inline mr-1" size={18} /> },
   { key: 'driving-hgv', label: 'Bus', icon: <BusFront className="inline mr-1" size={18} /> },
   { key: 'public-transport', label: 'Train', icon: <TrainFront className="inline mr-1" size={18} /> },
-  { key: 'scooter', label: 'Scooter', icon: <span className="inline mr-1" role="img" aria-label="Scooter">🛴</span> },
-  { key: 'taxi', label: 'Taxi', icon: <span className="inline mr-1" role="img" aria-label="Taxi">🚕</span> },
+  { key: 'scooter', label: 'Scooter', icon: <Scooter className="inline mr-1" size={18} /> },
+  { key: 'taxi', label: 'Taxi', icon: <Taxi className="inline mr-1" size={18} /> },
 ];
 
 const mosqueIcon = new L.Icon({
@@ -141,22 +141,31 @@ const MosqueMapPage: React.FC = () => {
   }, [selectedMosque, vehicle, userPos]);
 
   return (
-    <div className="fixed inset-0 z-0 bg-gray-100 dark:bg-gray-900 pt-16">
-      <div className="fixed left-0 right-0 top-16 z-50 bg-white/90 rounded-b-lg shadow px-4 py-2 flex gap-2 items-center w-fit mx-auto mt-0">
-        <span className="font-semibold">Vehicle:</span>
-        {VEHICLES.map(v => (
-          <button
-            key={v.key}
-            onClick={() => setVehicle(v.key)}
-            aria-label={v.label}
-            className={`px-2 py-1 rounded flex items-center text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 ${vehicle === v.key ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'}`}
-          >
-            {v.icon}{v.label}
-          </button>
-        ))}
-      </div>
+    <div className="relative w-full min-h-screen bg-gray-100 dark:bg-gray-900">
+      {/* Vehicle selector below navbar */}
+      {/* Map fills the screen below the header */}
       {userPos && (
-        <div className="h-[calc(100vh-4rem)] w-screen mt-0">
+        <div className="w-full relative" style={{ height: 'calc(100vh - 4rem)' }}>
+          {/* Vehicle selector overlay */}
+          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-[1000] bg-white dark:bg-gray-900 rounded-b-lg shadow px-4 py-2 flex gap-2 items-center">
+            {VEHICLES.map(v => (
+              <button
+                key={v.key}
+                onClick={() => setVehicle(v.key)}
+                aria-label={v.label}
+                className={`px-2 py-1 rounded flex items-center text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500
+                  ${vehicle === v.key
+                    ? 'bg-primary-600 text-white dark:bg-primary-400 dark:text-gray-900'
+                    : 'bg-gray-200 text-primary-600 dark:bg-gray-800 dark:text-primary-300'}
+                `}
+              >
+                <span className={vehicle === v.key ? 'text-white dark:text-gray-900' : 'text-primary-600 dark:text-primary-300'}>
+                  {v.icon}
+                </span>
+                <span className="ml-1">{v.label}</span>
+              </button>
+            ))}
+          </div>
           <MapContainer center={userPos} zoom={14} style={{ height: '100%', width: '100%' }}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <Marker position={userPos} icon={userIcon}>
