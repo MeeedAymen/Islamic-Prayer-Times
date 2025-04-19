@@ -18,6 +18,17 @@ const VEHICLES = [
   { key: 'truck', label: 'Truck', icon: <Truck className="inline mr-1" size={18} /> },
 ];
 
+const routeColors: Record<string, string> = {
+  'driving-car': '#2563eb', // Blue
+  'cycling-regular': '#22c55e', // Green
+  'foot-walking': '#f59e42', // Orange
+  'driving-hgv': '#a21caf', // Purple
+  'wheelchair': '#f43f5e', // Pink
+  'public-transport': '#0ea5e9', // Sky blue
+  'tram': '#eab308', // Yellow
+  'truck': '#6d28d9', // Indigo
+};
+
 const mosqueIcon = new L.Icon({
   iconUrl: 'https://cdn-icons-png.flaticon.com/512/5195/5195095.png', // Flaticon tower/minaret icon (new)
   iconSize: [32, 32],
@@ -38,14 +49,6 @@ const userArrowIcon = (angle: number) => new L.DivIcon({
   iconAnchor: [18, 18],
 });
 
-const routeColors: Record<string, string> = {
-  'driving-car': '#2563eb',
-  'cycling-regular': '#22c55e',
-  'foot-walking': '#f59e42',
-  'driving-hgv': '#a21caf',
-  'wheelchair': '#f43f5e',
-  'public-transport': '#0ea5e9',
-};
 
 function RecenterButton({ position }: { position: LatLngExpression }) {
   const map = useMap();
@@ -82,7 +85,7 @@ const MosqueMapContent: React.FC = () => {
   const [route, setRoute] = useState<any>(null);
   const [loadingRoute, setLoadingRoute] = useState(false);
   const [loadingMosques, setLoadingMosques] = useState(false);
-  const [mosqueError, setMosqueError] = useState<string | null>(null);
+  
   const [routeError, setRouteError] = useState<string | null>(null);
 
   // Listen for device orientation using Generic Sensor API (with fallback)
@@ -106,15 +109,15 @@ const MosqueMapContent: React.FC = () => {
         if (yaw < 0) yaw += 360;
         setHeading(yaw);
       });
-      sensor.addEventListener('error', (event: any) => {
+      sensor.addEventListener('error', (_: any) => {
         // Fallback to deviceorientation if sensor fails
-        fallbackListener = (event: DeviceOrientationEvent) => {
+        fallbackListener = (_: DeviceOrientationEvent) => {
           let compassHeading: number | null = null;
-          // @ts-ignore: webkitCompassHeading is for iOS Safari
-          if (typeof event.webkitCompassHeading === 'number') {
-            compassHeading = event.webkitCompassHeading;
-          } else if (typeof event.alpha === 'number') {
-            compassHeading = 360 - event.alpha;
+          //@ts-ignore: webkitCompassHeading is for iOS Safari
+          if (typeof (_ as any).webkitCompassHeading === 'number') {
+            compassHeading = (_ as any).webkitCompassHeading;
+          } else if (typeof _.alpha === 'number') {
+            compassHeading = 360 - _.alpha;
           }
           if (typeof compassHeading === 'number' && !isNaN(compassHeading)) {
             setHeading(compassHeading);
@@ -125,13 +128,13 @@ const MosqueMapContent: React.FC = () => {
       sensor.start();
     } else {
       // Fallback: deviceorientation
-      fallbackListener = (event: DeviceOrientationEvent) => {
+      fallbackListener = (_: DeviceOrientationEvent) => {
         let compassHeading: number | null = null;
         // @ts-ignore: webkitCompassHeading is for iOS Safari
-        if (typeof event.webkitCompassHeading === 'number') {
-          compassHeading = event.webkitCompassHeading;
-        } else if (typeof event.alpha === 'number') {
-          compassHeading = 360 - event.alpha;
+        if (typeof (_ as any).webkitCompassHeading === 'number') {
+          compassHeading = (_ as any).webkitCompassHeading;
+        } else if (typeof _.alpha === 'number') {
+          compassHeading = 360 - _.alpha;
         }
         if (typeof compassHeading === 'number' && !isNaN(compassHeading)) {
           setHeading(compassHeading);
@@ -157,7 +160,7 @@ const MosqueMapContent: React.FC = () => {
   useEffect(() => {
     if (!userPos) return;
     setLoadingMosques(true);
-    setMosqueError(null);
+    setRouteError(null);
     const [lat, lon] = userPos;
     const query = `
       [out:json][timeout:25];
@@ -178,7 +181,7 @@ const MosqueMapContent: React.FC = () => {
         setLoadingMosques(false);
       })
       .catch(() => {
-        setMosqueError('Failed to load mosques nearby.');
+        setRouteError('Failed to load mosques nearby.');
         setLoadingMosques(false);
       });
   }, [userPos]);
@@ -233,165 +236,161 @@ const url = `https://api.openrouteservice.org/v2/directions/${apiVehicle}?api_ke
       {userPos && (
         <div className="w-full relative" style={{ height: 'calc(100vh - 4rem - 56px)' }}>
           {/* Vehicle selector overlay */}
-          <div className="absolute top-0 left-0 right-0 z-[1000] flex justify-start md:justify-center px-0 pt-0">
-  <div className="bg-white/70 dark:bg-gray-800/70 shadow w-full md:w-auto md:rounded-b-lg gap-2 items-center overflow-x-auto whitespace-nowrap px-2 py-2 flex md:inline-flex">
-
-            {VEHICLES.map(v => (
-              <button
-                key={v.key}
-                onClick={() => setVehicle(v.key)}
-                aria-label={v.label}
-                className={`px-2 py-1 rounded flex items-center text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500
-                  ${vehicle === v.key
-                    ? 'bg-primary-600 text-white dark:bg-primary-400 dark:text-gray-900'
-                    : 'bg-gray-200 text-primary-600 dark:bg-gray-800 dark:text-primary-300'}
-                `}
-              >
-                <span className={vehicle === v.key ? 'text-white dark:text-gray-900' : 'text-primary-600 dark:text-primary-300'}>
-                  {v.icon}
-                </span>
-                <span className="ml-1">{v.label}</span>
-              </button>
-            ))}
-          </div>
+          <div className="absolute top-0 left-0 right-0 z-[1000] flex flex-col items-center px-0 pt-0 overflow-x-hidden">
+            <div className="w-full flex justify-start md:justify-center">
+              <div className="bg-white/70 dark:bg-gray-800/70 shadow w-full md:w-auto md:rounded-b-lg gap-2 items-center px-2 py-2 flex md:inline-flex">
+                {VEHICLES.map(v => (
+                  <button
+                    key={v.key}
+                    onClick={() => setVehicle(v.key)}
+                    aria-label={v.label}
+                    className={`px-2 py-1 rounded flex items-center text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500
+                      ${vehicle === v.key
+                        ? 'bg-primary-600 text-white shadow'
+                        : 'bg-white dark:bg-gray-900 text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-800'}
+                    `}
+                  >
+                    {v.icon} {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {route && route.properties && route.properties.segments && route.properties.segments[0] && (
+              <div className="mt-2 text-center text-primary-700 dark:text-primary-300 font-semibold text-sm bg-white/90 dark:bg-gray-900/90 rounded px-3 py-1 shadow">
+                Estimated time: {Math.ceil(route.properties.segments[0].duration / 60)} min
+              </div>
+            )}
           </div>
           <MapContainer center={userPos} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <ZoomControls />
             {/* Show arrow icon and rotation if on route, else normal icon */}
-{(() => {
-  // If we have a heading (device orientation), use it for the arrow icon
-  if (userPos && typeof heading === 'number') {
-    return (
-      <Marker
-        position={userPos}
-        icon={userArrowIcon(heading)}
-      >
-        <Popup>Your Location (Compass)</Popup>
-      </Marker>
-    );
-  }
-  // Otherwise, fallback to route-based direction if available
-  try {
-    if (
-      route &&
-      route.geometry &&
-      Array.isArray(route.geometry.coordinates) &&
-      route.geometry.coordinates.length > 1 &&
-      userPos &&
-      typeof userPos[0] === 'number' &&
-      typeof userPos[1] === 'number'
-    ) {
-      // ORS: [lng, lat], Leaflet: [lat, lng]
-      const [userLat, userLng] = userPos;
-      const [nextLng, nextLat] = route.geometry.coordinates[1];
-      if (
-        typeof nextLat === 'number' &&
-        typeof nextLng === 'number'
-      ) {
-        const dx = nextLng - userLng;
-        const dy = nextLat - userLat;
-        const angleRad = Math.atan2(dx, dy);
-        const angleDeg = angleRad * (180 / Math.PI);
-        return (
-          <Marker
-            position={userPos}
-            icon={userArrowIcon(angleDeg)}
-          >
-            <Popup>Your Location (On Route)</Popup>
-          </Marker>
-        );
-      }
-    }
-  } catch (e) {
-    // ignore
-  }
-  // Fallback to normal icon
-  return (
-    <Marker position={userPos} icon={userIcon}>
-      <Popup>Your Location</Popup>
-    </Marker>
-  );
-})()}
-            {!loadingMosques && mosques.length === 0 && (
-              <></> /* Map will look empty, but we show a message below */
-            )}
-            {mosques.map((m, i) => (
-              <Marker
-                key={m.id || i}
-                position={[m.lat || m.center?.lat, m.lon || m.center?.lon]}
-                icon={mosqueIcon}
-                
-              >
-                <Popup>
-  <div className="font-semibold text-primary-700 dark:text-primary-400 flex items-center">
-    🕌 {m.tags?.name || m.tags?.['name:en'] || m.tags?.['name:ar'] || m.tags?.['name:fr'] || 'Unnamed Mosque'}
-  </div>
-  {(m.tags?.['addr:street'] || m.tags?.['addr:city']) && (
-    <div className="text-xs text-gray-700 dark:text-gray-200 mb-1">
-      {m.tags?.['addr:street']}{m.tags?.['addr:street'] && m.tags?.['addr:city'] ? ', ' : ''}{m.tags?.['addr:city']}
-    </div>
-  )}
-  {/* Show distance if userPos is available */}
-  {userPos && (
-    <div className="text-xs text-primary-600 dark:text-primary-400 mb-1 font-medium">
-      Distance: {(() => {
-        const lat1 = userPos[0];
-        const lon1 = userPos[1];
-        const lat2 = m.lat || m.center?.lat;
-        const lon2 = m.lon || m.center?.lon;
-        if (
-          typeof lat1 === 'number' && typeof lon1 === 'number' &&
-          typeof lat2 === 'number' && typeof lon2 === 'number'
-        ) {
-          const dist = haversineDistance(lat1, lon1, lat2, lon2);
-          return dist > 1000 ? `${(dist / 1000).toFixed(2)} km` : `${dist.toFixed(0)} m`;
-        }
-        return '?';
-      })()}
-      {/* Show estimated time if this mosque is selected and route is available */}
-      {selectedMosque && ((m.lat || m.center?.lat) === (selectedMosque.lat || selectedMosque.center?.lat)) && ((m.lon || m.center?.lon) === (selectedMosque.lon || selectedMosque.center?.lon)) && (
-        route && route.properties && route.properties.segments && route.properties.segments[0] ? (
-          <span className="block text-xs text-primary-700 dark:text-primary-300 font-normal mt-1">
-            Estimated time: {Math.ceil(route.properties.segments[0].duration / 60)} min
-          </span>
-        ) : (
-          <span className="block text-xs text-gray-500 dark:text-gray-400 font-normal mt-1">
-            Estimated time not available for this vehicle.
-          </span>
-        )
-      )}
-    </div>
-  )}
-  <button
-    className="mt-2 px-3 py-1 rounded bg-primary-600 text-white hover:bg-primary-700 focus:outline-none"
-    onClick={() => {
-  setSelectedMosque(m);
-}}
-  >
-    Go Here
-  </button>
-</Popup>
-              </Marker>
-            ))}
-            {route && (
+            {(() => {
+              // If we have a heading (device orientation), use it for the arrow icon
+              if (userPos && typeof heading === 'number') {
+                return (
+                  <Marker
+                    position={userPos}
+                    icon={userArrowIcon(heading)}
+                  >
+                    <Popup>Your Location (Compass)</Popup>
+                  </Marker>
+                );
+              }
+              // Otherwise, fallback to route-based direction if available
+              try {
+                if (
+                  route &&
+                  route.geometry &&
+                  Array.isArray(route.geometry.coordinates) &&
+                  route.geometry.coordinates.length > 1 &&
+                  userPos &&
+                  typeof userPos[0] === 'number' &&
+                  typeof userPos[1] === 'number'
+                ) {
+                  // ORS: [lng, lat], Leaflet: [lat, lng]
+                  const [userLat, userLng] = userPos;
+                  const [nextLng, nextLat] = route.geometry.coordinates[1];
+                  if (
+                    typeof nextLat === 'number' &&
+                    typeof nextLng === 'number'
+                  ) {
+                    const dx = nextLng - userLng;
+                    const dy = nextLat - userLat;
+                    const angleRad = Math.atan2(dx, dy);
+                    const angleDeg = angleRad * (180 / Math.PI);
+                    return (
+                      <Marker
+                        position={userPos}
+                        icon={userArrowIcon(angleDeg)}
+                      >
+                        <Popup>Your Location (On Route)</Popup>
+                      </Marker>
+                    );
+                  }
+                }
+              } catch (e) {
+                // ignore
+              }
+              // Fallback to normal icon
+              return (
+                <Marker position={userPos} icon={userIcon}>
+                  <Popup>Your Location</Popup>
+                </Marker>
+              );
+            })()}
+            {route && route.geometry && Array.isArray(route.geometry.coordinates) && (
               <Polyline
                 positions={route.geometry.coordinates.map(([lng, lat]: [number, number]) => [lat, lng])}
-                pathOptions={{ color: routeColors[vehicle] || 'blue', weight: 6, opacity: 0.7 }}
+                pathOptions={{ color: routeColors[vehicle] || '#2563eb', weight: 6, opacity: 0.7 }}
               />
             )}
+            {mosques.map((m, i) => {
+              const popupRef = React.createRef<any>();
+              return (
+                <Marker
+                  key={m.id || i}
+                  position={[m.lat || m.center?.lat, m.lon || m.center?.lon]}
+                  icon={mosqueIcon}
+                >
+                  <Popup ref={popupRef}>
+                    <div className="font-semibold text-primary-700 dark:text-primary-400 flex items-center">
+                      🕌 {m.tags?.name || m.tags?.['name:en'] || m.tags?.['name:ar'] || m.tags?.['name:fr'] || 'Unnamed Mosque'}
+                    </div>
+                    {(m.tags?.['addr:street'] || m.tags?.['addr:city']) && (
+                      <div className="text-xs text-gray-700 dark:text-gray-200 mb-1">
+                        {m.tags?.['addr:street']}{m.tags?.['addr:street'] && m.tags?.['addr:city'] ? ', ' : ''}{m.tags?.['addr:city']}
+                      </div>
+                    )}
+                    {/* Show distance if userPos is available */}
+                    {userPos && (
+                      <div className="text-xs text-primary-600 dark:text-primary-400 mb-1 font-medium">
+                        Distance: {(() => {
+                          const lat1 = userPos[0];
+                          const lon1 = userPos[1];
+                          const lat2 = m.lat || m.center?.lat;
+                          const lon2 = m.lon || m.center?.lon;
+                          if (
+                            typeof lat1 === 'number' && typeof lon1 === 'number' &&
+                            typeof lat2 === 'number' && typeof lon2 === 'number'
+                          ) {
+                            const dist = haversineDistance(lat1, lon1, lat2, lon2);
+                            return dist > 1000 ? `${(dist / 1000).toFixed(2)} km` : `${dist.toFixed(0)} m`;
+                          }
+                          return '?';
+                        })()}
+                      </div>
+                    )}
+                    {/* Show estimated time if this mosque is selected and route is available */}
+                    {selectedMosque && ((m.lat || m.center?.lat) === (selectedMosque.lat || selectedMosque.center?.lat)) && ((m.lon || m.center?.lon) === (selectedMosque.lon || selectedMosque.center?.lon)) && (
+                      route && route.properties && route.properties.segments && route.properties.segments[0] ? (
+                        <span className="block text-xs text-primary-700 dark:text-primary-300 font-normal mt-1">
+                          Estimated time: {Math.ceil(route.properties.segments[0].duration / 60)} min
+                        </span>
+                      ) : (
+                        <span className="block text-xs text-gray-500 dark:text-gray-400 font-normal mt-1">
+                          Estimated time not available for this vehicle.
+                        </span>
+                      )
+                    )}
+                    <button
+                      className="mt-2 px-3 py-1 rounded bg-primary-600 text-white hover:bg-primary-700 focus:outline-none"
+                      onClick={() => {
+                        setSelectedMosque(m);
+                        if (popupRef.current) {
+                          if (typeof popupRef.current._close === 'function') popupRef.current._close();
+                          if (typeof popupRef.current.close === 'function') popupRef.current.close();
+                        }
+                      }}
+                    >
+                      Go Here
+                    </button>
+                  </Popup>
+                </Marker>
+              );
+            })}
             <RecenterButton position={userPos} />
           </MapContainer>
-          {loadingMosques && (
-            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-              <div className="bg-white/90 dark:bg-gray-900/90 p-6 rounded shadow text-lg font-semibold text-primary-700 dark:text-primary-400">Loading mosques nearby...</div>
-            </div>
-          )}
-          {mosqueError && (
-            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-              <div className="bg-red-100 dark:bg-red-900/90 p-6 rounded shadow text-lg font-semibold text-red-700 dark:text-red-200">{mosqueError}</div>
-            </div>
-          )}
           {!loadingMosques && mosques.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
               <div className="bg-white/90 dark:bg-gray-900/90 p-6 rounded shadow text-lg font-semibold text-gray-700 dark:text-gray-200">No mosques found nearby.</div>
