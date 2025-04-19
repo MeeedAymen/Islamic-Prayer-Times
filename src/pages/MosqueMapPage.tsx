@@ -18,7 +18,7 @@ const VEHICLES = [
 ];
 
 const mosqueIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/2936/2936744.png',
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/5195/5195095.png', // Flaticon tower/minaret icon (new)
   iconSize: [32, 32],
   iconAnchor: [16, 32],
   popupAnchor: [0, -32],
