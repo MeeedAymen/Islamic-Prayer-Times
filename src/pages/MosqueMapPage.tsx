@@ -4,6 +4,7 @@ import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Car, Bike, Footprints, Locate, BusFront, TrainFront, TramFront, Truck } from 'lucide-react';
 import ZoomControls from '../components/ZoomControls';
+import Header from '../components/Header';
 
 const ORS_API_KEY = import.meta.env.VITE_ORS_API_KEY;
 
@@ -55,6 +56,17 @@ function RecenterButton({ position }: { position: LatLngExpression }) {
 
 
 const MosqueMapPage: React.FC = () => {
+  // Add the header so the navbar is always present, including on mobile
+  return (
+    <>
+      <Header />
+      <MosqueMapContent />
+    </>
+  );
+};
+
+// Extract the current content of MosqueMapPage into MosqueMapContent to avoid double logic
+const MosqueMapContent: React.FC = () => {
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const [mosques, setMosques] = useState<any[]>([]);
   const [selectedMosque, setSelectedMosque] = useState<any | null>(null);
@@ -266,4 +278,3 @@ const MosqueMapPage: React.FC = () => {
   );
 };
 
-export default MosqueMapPage;
