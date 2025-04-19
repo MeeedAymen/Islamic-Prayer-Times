@@ -56,13 +56,7 @@ function RecenterButton({ position }: { position: LatLngExpression }) {
 
 
 const MosqueMapPage: React.FC = () => {
-  // Add the header so the navbar is always present, including on mobile
-  return (
-    <>
-      <Header />
-      <MosqueMapContent />
-    </>
-  );
+  return <MosqueMapContent />;
 };
 
 // Extract the current content of MosqueMapPage into MosqueMapContent to avoid double logic
