@@ -28,13 +28,13 @@ export const usePrayerTimes = () => {
         const geoData = await geoRes.json();
         timezoneName = geoData.timezoneId || 'Etc/GMT';
         setTimezone(timezoneName);
-        // 2. Fetch initial time for the timezone
-        const timeRes = await fetch(`https://worldtimeapi.org/api/timezone/${timezoneName}`);
-        const timeData = await timeRes.json();
-        setLocalTime(timeData.datetime);
-        // 3. Compute GMT offset
-        if (typeof timeData.utc_offset === 'string') {
-          setGmtOffset('GMT' + timeData.utc_offset);
+        // 2. Use local system time instead of worldtimeapi.org
+        const now = new Date();
+        setLocalTime(now.toISOString());
+        // 3. Compute GMT offset from geonames.org response
+        if (typeof geoData.gmtOffset === 'number') {
+          const offsetHours = geoData.gmtOffset;
+          setGmtOffset((offsetHours >= 0 ? 'GMT+' : 'GMT') + offsetHours);
         } else {
           setGmtOffset('');
         }

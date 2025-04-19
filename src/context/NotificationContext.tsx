@@ -13,6 +13,13 @@ const NotificationContext = createContext<NotificationContextType>(defaultNotifi
 
 export const useNotification = () => useContext(NotificationContext);
 
+// Call this from a user gesture, e.g., a "Enable Notifications" button
+export function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+    Notification.requestPermission();
+  }
+}
+
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
@@ -39,10 +46,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
       );
 
-      // Request permission for browser notifications if not already granted
-      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-        Notification.requestPermission();
-      }
+      // Notification permission must be requested from a user gesture. See exported function below.
 
       // Show browser notification if permission is granted
       if (Notification.permission === 'granted') {

@@ -71,6 +71,8 @@ export default MosqueMapPage;
 
 // Extract the current content of MosqueMapPage into MosqueMapContent to avoid double logic
 const MosqueMapContent: React.FC = () => {
+  // New: Heading state for device orientation
+  const [heading, setHeading] = useState<number | null>(null);
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const [mosques, setMosques] = useState<any[]>([]);
   const [selectedMosque, setSelectedMosque] = useState<any | null>(null);
@@ -80,6 +82,66 @@ const MosqueMapContent: React.FC = () => {
   const [loadingMosques, setLoadingMosques] = useState(false);
   const [mosqueError, setMosqueError] = useState<string | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
+
+  // Listen for device orientation using Generic Sensor API (with fallback)
+  useEffect(() => {
+    let sensor: any = null;
+    let fallbackListener: any = null;
+    // Try Generic Sensor API first
+    if ('AbsoluteOrientationSensor' in window) {
+      // @ts-ignore
+      sensor = new (window as any).AbsoluteOrientationSensor({ frequency: 60 });
+      sensor.addEventListener('reading', () => {
+        // sensor.quaternion is a Float32Array [x, y, z, w]
+        const q = sensor.quaternion;
+        // Convert quaternion to yaw (compass heading in degrees)
+        // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+        const ysqr = q[1] * q[1];
+        // yaw (z-axis rotation)
+        const t3 = +2.0 * (q[3] * q[2] + q[0] * q[1]);
+        const t4 = +1.0 - 2.0 * (ysqr + q[2] * q[2]);
+        let yaw = Math.atan2(t3, t4) * (180 / Math.PI);
+        if (yaw < 0) yaw += 360;
+        setHeading(yaw);
+      });
+      sensor.addEventListener('error', (event: any) => {
+        // Fallback to deviceorientation if sensor fails
+        fallbackListener = (event: DeviceOrientationEvent) => {
+          let compassHeading: number | null = null;
+          // @ts-ignore: webkitCompassHeading is for iOS Safari
+          if (typeof event.webkitCompassHeading === 'number') {
+            compassHeading = event.webkitCompassHeading;
+          } else if (typeof event.alpha === 'number') {
+            compassHeading = 360 - event.alpha;
+          }
+          if (typeof compassHeading === 'number' && !isNaN(compassHeading)) {
+            setHeading(compassHeading);
+          }
+        };
+        window.addEventListener('deviceorientation', fallbackListener, true);
+      });
+      sensor.start();
+    } else {
+      // Fallback: deviceorientation
+      fallbackListener = (event: DeviceOrientationEvent) => {
+        let compassHeading: number | null = null;
+        // @ts-ignore: webkitCompassHeading is for iOS Safari
+        if (typeof event.webkitCompassHeading === 'number') {
+          compassHeading = event.webkitCompassHeading;
+        } else if (typeof event.alpha === 'number') {
+          compassHeading = 360 - event.alpha;
+        }
+        if (typeof compassHeading === 'number' && !isNaN(compassHeading)) {
+          setHeading(compassHeading);
+        }
+      };
+      window.addEventListener('deviceorientation', fallbackListener, true);
+    }
+    return () => {
+      if (sensor && sensor.stop) sensor.stop();
+      if (fallbackListener) window.removeEventListener('deviceorientation', fallbackListener, true);
+    };
+  }, []);
 
   // Get user location
   useEffect(() => {
@@ -196,6 +258,18 @@ const url = `https://api.openrouteservice.org/v2/directions/${apiVehicle}?api_ke
             <ZoomControls />
             {/* Show arrow icon and rotation if on route, else normal icon */}
 {(() => {
+  // If we have a heading (device orientation), use it for the arrow icon
+  if (userPos && typeof heading === 'number') {
+    return (
+      <Marker
+        position={userPos}
+        icon={userArrowIcon(heading)}
+      >
+        <Popup>Your Location (Compass)</Popup>
+      </Marker>
+    );
+  }
+  // Otherwise, fallback to route-based direction if available
   try {
     if (
       route &&
@@ -217,7 +291,6 @@ const url = `https://api.openrouteservice.org/v2/directions/${apiVehicle}?api_ke
         const dy = nextLat - userLat;
         const angleRad = Math.atan2(dx, dy);
         const angleDeg = angleRad * (180 / Math.PI);
-        console.log('Drawing user arrow icon with angle:', angleDeg, 'userPos:', userPos, 'next:', [nextLat, nextLng]);
         return (
           <Marker
             position={userPos}
@@ -226,12 +299,10 @@ const url = `https://api.openrouteservice.org/v2/directions/${apiVehicle}?api_ke
             <Popup>Your Location (On Route)</Popup>
           </Marker>
         );
-      } else {
-        console.warn('Route geometry for arrow icon is invalid:', route.geometry.coordinates[1]);
       }
     }
   } catch (e) {
-    console.error('Error rendering user arrow icon:', e);
+    // ignore
   }
   // Fallback to normal icon
   return (
