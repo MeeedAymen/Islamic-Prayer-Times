@@ -157,8 +157,9 @@ const MosqueMapContent: React.FC = () => {
     <div className="relative w-full min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* Vehicle selector below navbar */}
       {/* Map fills the screen below the header */}
+      {/* Subtract header (4rem) and mobile navbar (3.5rem = 56px) for mobile */}
       {userPos && (
-        <div className="w-full relative" style={{ height: 'calc(100vh - 4rem)' }}>
+        <div className="w-full relative" style={{ height: 'calc(100vh - 4rem - 56px)' }}>
           {/* Vehicle selector overlay */}
           <div className="absolute top-0 left-0 right-0 z-[1000] flex justify-start md:justify-center px-0 pt-0">
   <div className="bg-white/70 dark:bg-gray-800/70 shadow w-full md:w-auto md:rounded-b-lg gap-2 items-center overflow-x-auto whitespace-nowrap px-2 py-2 flex md:inline-flex">
